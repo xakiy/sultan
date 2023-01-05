@@ -33,7 +33,8 @@ jobs:
           archives: 'qtbase qtconnectivity qtwebsockets qtwebview'
       
       - name: 'Build the App'
-        run: choco mysql sqlite && mkdir _build && cd _build && qmake CONFIG+=release CONFIG+=SINGLEBIN ../sultan.pro
+        # Patching D:\a\sultan\sultan\qt\Qt\5.15.2\msvc2015_64\bin\qmake.exe
+        run: choco install mysql sqlite && mkdir _build && cd _build && qmake CONFIG+=release CONFIG+=SINGLEBIN ../sultan.pro
 
       # - name: 'Setup Environment'
       #   id: setup
