@@ -1,0 +1,53 @@
+name: 'BUILD'
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  windows_build:
+    name: 'Windows x64'
+    runs-on: [windows-2019]    
+    defaults:
+      run:
+        working-directory: 'sultan'
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v3{{
+        with:
+          submodules: 'recursive'
+          path: 'sultan'
+          fetch-depth: 0
+
+      - name: 'Install Qt'
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '5.15.2'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2015_64'
+          dir: '${{ github.workspace }}/qt/'
+          install-deps: 'true'
+          modules: 'qtnetworkauth'
+          archives: 'qtbase qtconnectivity qtwebsockets qtwebview'
+        run: /
+          choco mysql sqlite
+          mkdir _build
+          cd _build
+          qmake CONFIG+=release CONFIG+=SINGLEBIN ../sultan.pro
+
+      - name: Setup Environment
+        id: setup
+        run: |
+          $CommitHash = git rev-parse --short=9 HEAD
+          "commitHash=${CommitHash}" >> $env:GITHUB_OUTPUT
+          VERSION=$(sed -n 's/.*ApplicationVersion("\([^)]*\)").*/\1/p' ../sultan/main.cpp)
+          echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV          
+
+      - name: 'Upload build artifact'
+        if: ${{ success() && (github.event_name != 'pull_request' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: 'sultan-x64-${{ steps.setup.outputs.commitHash }}'
+          path: '${{ env.FILE_NAME }}'
