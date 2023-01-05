@@ -8,10 +8,9 @@ on:
 jobs:
   windows_build:
     name: 'Windows x64'
-    runs-on: [windows-2019]    
-    defaults:
-      run:
-        working-directory: 'sultan'
+    runs-on: [windows-2019]
+    env:
+      BUILD_TYPE: 'release'
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v3
@@ -34,7 +33,10 @@ jobs:
       
       - name: 'Build the App'
         # Patching D:\a\sultan\sultan\qt\Qt\5.15.2\msvc2015_64\bin\qmake.exe
-        run: choco install mysql sqlite && mkdir _build && cd _build && qmake CONFIG+=release CONFIG+=SINGLEBIN ../sultan.pro
+        working-directory: ./_build
+        run: |
+          choco install mysql sqlite
+          qmake CONFIG+=${{ env.BUILD_TYPE }} CONFIG+=SINGLEBIN ../sultan.pro
 
       # - name: 'Setup Environment'
       #   id: setup
