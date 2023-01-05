@@ -38,7 +38,8 @@ jobs:
         # Patching D:\a\sultan\sultan\qt\Qt\5.15.2\msvc2015_64\bin\qmake.exe
         run: |
           choco install mysql sqlite
-          qmake CONFIG+=${{ env.BUILD_TYPE }} CONFIG+=SINGLEBIN sultan.pro
+          ls -l
+          # qmake CONFIG+=${{ env.BUILD_TYPE }} CONFIG+=SINGLEBIN sultan.pro
 
       # - name: 'Setup Environment'
       #   id: setup
