@@ -33,7 +33,7 @@ jobs:
       
       - name: 'Build the App'
         # Patching D:\a\sultan\sultan\qt\Qt\5.15.2\msvc2015_64\bin\qmake.exe
-        working-directory: ./_build
+        working-directory: _build
         run: |
           choco install mysql sqlite
           qmake CONFIG+=${{ env.BUILD_TYPE }} CONFIG+=SINGLEBIN ../sultan.pro
