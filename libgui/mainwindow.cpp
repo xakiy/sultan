@@ -136,7 +136,10 @@ void MainWindow::setup() {
     ui->actionInitial_Stock->setVisible(false);
 }
 
-void MainWindow::showSplashScreen() { mSplashUi->show(); }
+void MainWindow::showSplashScreen() {
+    mSplashUi->refreshLogo();
+    mSplashUi->show();
+}
 
 void MainWindow::hideSplashScreen() {
     mSplashUi->hide();
@@ -264,9 +267,6 @@ void MainWindow::loginSuccess() {
 #else
     showMaximized();
 #endif
-    QNetworkRequest req(QUrl("https://firestore.googleapis.com/v1beta1/projects/testpro-61e0d/databases/(default)/"
-                             "documents/version/version"));
-    mNam.get(req);
 }
 
 void MainWindow::logout() {

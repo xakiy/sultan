@@ -39,8 +39,10 @@ const QString SERVER_ADDRESS = QStringLiteral("global/server_address");
 const QString SERVER_PORT = QStringLiteral("global/server_port");
 const QString SQLITE_DBPATH = QStringLiteral("global/sqlite_db_path");
 const QString SQLITE_DBNAME = QStringLiteral("global/sqlite_db_name");
+const QString SQLITE_FULLPATH = QStringLiteral("global/sqlite_db_fullpath");
 const QString RESETDB = QStringLiteral("global/dontchangeme");
 
+const QString LOGO = QStringLiteral("application/logo");
 const QString MARKET_NAME = QStringLiteral("application/market_name");
 const QString MARKET_SUBNAME = QStringLiteral("application/market_subname");
 const QString MACHINE_ID = QStringLiteral("application/machine_id");
@@ -56,6 +58,7 @@ const QString LOCALE_COUNTRY = QStringLiteral("application/locale_country");
 const QString LOCALE_USE_SIGN = QStringLiteral("application/locale_use_sign");
 const QString LOCALE_SIGN = QStringLiteral("application/locale_sign");
 const QString LOCALE_DECIMAL = QStringLiteral("application/locale_decimal");
+const QString ZERO_STOCK_SALE = QStringLiteral("application/zero_stock_sale");
 
 const QString USE_TAX = QStringLiteral("application/use_tax");
 const QString TAX_VALUE = QStringLiteral("application/tax_value");
@@ -77,6 +80,7 @@ const QString PRINTER_CASHIER_LINEFEED = QStringLiteral("printer/cashier_linefee
 const QString PRINTER_CASHIER_BARCODE_LEN = QStringLiteral("printer/cashier_barcodelen");
 const QString PRINTER_CASHIER_SHOW_BARCODE = QStringLiteral("printer/cashier_show_barcode");
 const QString PRINTER_CASHIER_ONLY_CPI10 = QStringLiteral("printer/cashier_only_cpi10");
+const QString PRINTER_CASHIER_SHOW_ITEM_TOTAL = QStringLiteral("printer/cashier_show_item_total");
 
 const QString CAI_ENABLE = QStringLiteral("cashier/cai_enable");
 const QString CAI_DEFAULT_SUPLIER = QStringLiteral("cashier/cai_default_suplier");
@@ -90,6 +94,7 @@ const QString CAI_MARGIN = QStringLiteral("cashier/cai_margin");
 const QString INLINE_EDIT_QTY = QStringLiteral("cashier/inline_edit_qty");
 
 const QString PRINTER_CASHIER_PRICE_LINEFEED = QStringLiteral("printer/cashier_price_linefeed");
+const QString PRINTER_CASHIER_PRICE_DOUBLE_FONT = QStringLiteral("printer/cashier_price_double_font");
 
 const QString NUMBER_DATE = QStringLiteral("number/date");
 const QString NUMBER_VALUE = QStringLiteral("number/value");

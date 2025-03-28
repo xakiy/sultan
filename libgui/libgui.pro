@@ -1,11 +1,10 @@
-include(../external_library/o2/src/src.pri)
 include(../libglobal/libglobal.pri)
 include(../libprint/libprint.pri)
 include(../libdb/libdb.pri)
 
 TEMPLATE = lib
 TARGET = gui
-target.path = $${LIBDIR}
+target.path = /usr/bin
 INSTALLS += target
 
 QT += core gui widgets network sql concurrent serialport
@@ -65,9 +64,12 @@ TRANSLATIONS = ../translation/libgui_id.ts
 
 SOURCES += \
     cashier/cashiercustomerdisplay.cpp \
+    doublespinbox.cpp \
     item/importitemdialog.cpp \
+    logocached.cpp \
     mainwindow.cpp \
     paginationwidget.cpp \
+    purchase/purchaseaddpaymentdialog.cpp \
     tabwidget.cpp \
     setting/settingwidget.cpp \
     user/userwidget.cpp \
@@ -142,7 +144,6 @@ SOURCES += \
     cashier/checkpricedialog.cpp \
     admin/importexportdatabasedialog.cpp \
     admin/browserdialog.cpp \
-    googledrive.cpp \
     admin/listdialog.cpp \
     checkstock/checkstockwidget.cpp \
     checkstock/checkstockadddialog.cpp \
@@ -170,10 +171,13 @@ SOURCES += \
 
 HEADERS += \
     cashier/cashiercustomerdisplay.h \
+    doublespinbox.h \
     gui_global.h \
     item/importitemdialog.h \
+    logocached.h \
     mainwindow.h \
     paginationwidget.h \
+    purchase/purchaseaddpaymentdialog.h \
     tabwidget.h \
     setting/settingwidget.h \
     user/userwidget.h \
@@ -248,7 +252,6 @@ HEADERS += \
     cashier/checkpricedialog.h \
     admin/importexportdatabasedialog.h \
     admin/browserdialog.h \
-    googledrive.h \
     admin/listdialog.h \
     checkstock/checkstockwidget.h \
     checkstock/checkstockadddialog.h \
@@ -279,6 +282,7 @@ FORMS += \
     item/importitemdialog.ui \
     mainwindow.ui \
     paginationwidget.ui \
+    purchase/purchaseaddpaymentdialog.ui \
     setting/settingwidget.ui \
     normalwidget.ui \
     suplier/suplieradddialog.ui \

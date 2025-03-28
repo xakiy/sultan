@@ -1,4 +1,4 @@
-QT       += core gui widgets sql websockets printsupport concurrent serialport
+QT       += core gui widgets sql printsupport concurrent serialport network
 
 CONFIG(USE_EMBED_BROWSER) {
     DEFINES+=USE_EMBED_BROWSER
@@ -16,15 +16,16 @@ TEMPLATE = app
 CONFIG += c++11
 
 contains(CONFIG, SINGLEBIN) {
-    include(../external_library/o2/src/src.pri)
-    include(../external_library/pillow/pillowcore/pillowcore_src.pri)
+    QXLSX_PARENTPATH=../external_library/QXlsx/         # current QXlsx path is . (. means curret directory)
+    QXLSX_HEADERPATH=../external_library/QXlsx/header/  # current QXlsx header path is ./header/
+    QXLSX_SOURCEPATH=../external_library/QXlsx/source/  # current QXlsx source path is ./source/
+    include(../external_library/QXlsx/QXlsx.pri)
     include(../libglobal/libglobal_src.pri)
     include(../libprint/libprint_src.pri)
     include(../libdb/libdb_src.pri)
     include(../libserver/libserver_src.pri)
     include(../libgui/libgui_src.pri)
 } else {
-    include(../external_library/pillow/pillowcore/pillowcore.pri)
     include(../libglobal/libglobal.pri)
     include(../libprint/libprint.pri)
     include(../libdb/libdb.pri)
@@ -87,16 +88,19 @@ TRANSLATIONS = ../translation/sultan_id.ts
 
 SOURCES += main.cpp \
     core.cpp \
-    http/httpserver.cpp \
     socket/socketmanager.cpp \
     socket/socketclient.cpp \
-    socket/sockethandler.cpp
+    socket/sockethandler.cpp \
+    socket/wraptcpsocket.cpp
 
 HEADERS  += \
     core.h \
-    http/httpserver.h \
     socket/socketmanager.h \
     socket/socketclient.h \
-    socket/sockethandler.h
+    socket/sockethandler.h \
+    socket/wraptcpsocket.h
 
 FORMS +=
+
+target.path = /usr/bin
+INSTALLS += target

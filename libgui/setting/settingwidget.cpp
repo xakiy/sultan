@@ -24,11 +24,13 @@
 #include "global_constant.h"
 #include "global_setting_const.h"
 #include "guiutil.h"
+#include "logocached.h"
 #include "message.h"
 #include "preference.h"
 #include "printer.h"
 #include "ui_settingwidget.h"
 #include <QDebug>
+#include <QFileDialog>
 #include <QMessageBox>
 #include <QMetaEnum>
 #include <QSerialPortInfo>
@@ -43,6 +45,7 @@ using namespace LibPrint;
 
 SettingWidget::SettingWidget(MessageBus *bus, QWidget *parent) : QWidget(parent), ui(new Ui::SettingWidget) {
     ui->setupUi(this);
+    ui->label->setPixmap(LogoCached::logo32());
     setMessageBus(bus);
     connect(ui->checkSign, SIGNAL(toggled(bool)), SLOT(signChanged()));
     connect(ui->pushSave, SIGNAL(clicked(bool)), SLOT(saveClicked()));
@@ -56,6 +59,8 @@ SettingWidget::SettingWidget(MessageBus *bus, QWidget *parent) : QWidget(parent)
     connect(ui->pushPrintTest, SIGNAL(clicked(bool)), SLOT(printTestClicked()));
     connect(ui->comboLocale, SIGNAL(currentIndexChanged(int)), SLOT(localeLanguageChanged()));
     connect(ui->pushTestCustomerDisplay, SIGNAL(clicked(bool)), SLOT(onCustomerDisplayClicked()));
+    connect(ui->pushLogo, SIGNAL(clicked()), SLOT(pushLogoClicked()));
+    connect(ui->pushResetLogo, SIGNAL(clicked()), SLOT(pushResetLogoClicked()));
     ui->tabWidget->setCurrentIndex(0);
     Message msg(MSG_TYPE::MACHINE, MSG_COMMAND::QUERY);
     sendMessage(&msg);
@@ -68,6 +73,7 @@ SettingWidget::SettingWidget(MessageBus *bus, QWidget *parent) : QWidget(parent)
     Message msg5(MSG_TYPE::CONFIG, MSG_COMMAND::QUERY);
     sendMessage(&msg5);
     checkWidget();
+    ui->labelLogo->setPixmap(getLogo().scaled(128, 128));
 }
 
 SettingWidget::~SettingWidget() { delete ui; }
@@ -82,6 +88,7 @@ void SettingWidget::setupAppliaction() {
     ui->groupNameBased->setChecked(Preference::getBool(SETTING::CASHIER_NAMEBASED));
     ui->groupCapitalize->setChecked(Preference::getBool(SETTING::CAPITALIZE));
     ui->groupUseMinimumOrder->setChecked(Preference::getBool(SETTING::MULTIPLE_MINIMUM));
+    ui->groupZeroStock->setChecked(Preference::getBool(SETTING::ZERO_STOCK_SALE));
 }
 
 void SettingWidget::setupLocale() {
@@ -155,9 +162,11 @@ void SettingWidget::setupPrinter() {
     ui->checkPrintCashierDrawer->setChecked(Preference::getBool(SETTING::PRINTER_CASHIER_KICK));
     ui->spinCashierLinefeed->setValue(Preference::getInt(SETTING::PRINTER_CASHIER_LINEFEED, 3));
     ui->spinCashierPriceLinefeed->setValue(Preference::getInt(SETTING::PRINTER_CASHIER_PRICE_LINEFEED, 2));
+    ui->checkDoubleFont->setChecked(Preference::getBool(SETTING::PRINTER_CASHIER_PRICE_DOUBLE_FONT, true));
     ui->spinBarcodeLength->setValue(Preference::getInt(SETTING::PRINTER_CASHIER_BARCODE_LEN, 15));
     ui->checkShowBarcode->setChecked(Preference::getBool(SETTING::PRINTER_CASHIER_SHOW_BARCODE));
     ui->checkOnly10->setChecked(Preference::getBool(SETTING::PRINTER_CASHIER_ONLY_CPI10));
+    ui->checkShowTotalItem->setChecked(Preference::getBool(SETTING::PRINTER_CASHIER_SHOW_ITEM_TOTAL));
 }
 
 void SettingWidget::setupCashier() {
@@ -229,6 +238,16 @@ void SettingWidget::setupCustomerDisplay() {
     ui->lineWelcome2->setText(Preference::getString(SETTING::CUSDISPLAY_WELCOME2, tr("to Sultan POS")));
 }
 
+QPixmap SettingWidget::getLogo() {
+    const QString &logoPath = Preference::getString(SETTING::LOGO);
+    if (!logoPath.isEmpty() && QFile::exists(logoPath)) {
+        QPixmap px;
+        if (px.load(logoPath))
+            return px;
+    }
+    return QPixmap(QLatin1String(":/images/icon_128.png"));
+}
+
 void SettingWidget::signChanged() { ui->lineSign->setEnabled(ui->checkSign->isChecked()); }
 
 void SettingWidget::cashierPrintTypeChanged() {
@@ -239,6 +258,8 @@ void SettingWidget::cashierPrintTypeChanged() {
 
 void SettingWidget::saveClicked() {
     saveToDbConfig();
+
+    Preference::setValue(SETTING::LOGO, logo);
     // market name
     Preference::setValue(SETTING::MARKET_NAME, ui->lineAppName->text());
     Preference::setValue(SETTING::MARKET_SUBNAME, ui->plainSubName->toPlainText());
@@ -251,6 +272,7 @@ void SettingWidget::saveClicked() {
     Preference::setValue(SETTING::CASHIER_NAMEBASED, ui->groupNameBased->isChecked());
     Preference::setValue(SETTING::CAPITALIZE, ui->groupCapitalize->isChecked());
     Preference::setValue(SETTING::MULTIPLE_MINIMUM, ui->groupUseMinimumOrder->isChecked());
+    Preference::setValue(SETTING::ZERO_STOCK_SALE, ui->groupZeroStock->isChecked());
     // locale
     Preference::setValue(SETTING::APPLICATION_LANGUAGE, ui->comboApplicationLanguage->currentData());
     Preference::setValue(SETTING::LOCALE_COUNTRY, ui->comboLocaleCounty->currentData().toInt());
@@ -275,6 +297,8 @@ void SettingWidget::saveClicked() {
     Preference::setValue(SETTING::PRINTER_CASHIER_SHOW_BARCODE, ui->checkShowBarcode->isChecked());
     Preference::setValue(SETTING::PRINTER_CASHIER_ONLY_CPI10, ui->checkOnly10->isChecked());
     Preference::setValue(SETTING::INLINE_EDIT_QTY, ui->checkInlineEdit->isChecked());
+    Preference::setValue(SETTING::PRINTER_CASHIER_SHOW_ITEM_TOTAL, ui->checkShowTotalItem->isChecked());
+    Preference::setValue(SETTING::PRINTER_CASHIER_PRICE_DOUBLE_FONT, ui->checkDoubleFont->isChecked());
 #ifdef USE_LIBUSB
     int cur = ui->comboUsb->currentIndex();
     if (ui->comboUsb->isEnabled() && mUsbDevices.size() > 0) {
@@ -418,4 +442,22 @@ void SettingWidget::onCustomerDisplayClicked() {
     } else {
         QMessageBox::critical(this, tr("Error"), tr("Unable to open customer display manager"));
     }
+}
+
+void SettingWidget::pushLogoClicked() {
+    const QString &filename = QFileDialog::getOpenFileName(this, tr("Select image"), QDir::homePath(), "*.png");
+    if (!filename.isEmpty()) {
+        QPixmap px;
+        if (!px.load(filename)) {
+            QMessageBox::critical(this, tr("Error"), tr("Unable to load the image!"));
+            return;
+        }
+        logo = filename;
+        ui->labelLogo->setPixmap(px.scaled(128, 128));
+    }
+}
+
+void SettingWidget::pushResetLogoClicked() {
+    logo = "";
+    ui->labelLogo->setPixmap(QPixmap(QLatin1String(":/images/icon_128.png")));
 }

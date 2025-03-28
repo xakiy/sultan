@@ -22,6 +22,8 @@
 
 #include "messagehandler.h"
 #include <QDialog>
+#include <QModelIndex>
+#include <QVariantMap>
 
 namespace Ui {
 class PurchasePaymentDialog;
@@ -41,13 +43,17 @@ class PurchasePaymentDialog : public QDialog, public LibG::MessageHandler {
     Ui::PurchasePaymentDialog *ui;
     int mId = 0;
     int mBankId = 0;
+    double mTotal = 0;
+    QVariantMap mData;
 
   protected:
     void messageReceived(LibG::Message *msg) override;
 
   private slots:
-    void saveClicked();
-    void paidChanged();
+    void addClicked();
+    void calculateReceived();
+    void updateClicked(const QModelIndex &index);
+    void deleteClicked(const QModelIndexList &index);
 };
 
 } // namespace LibGUI

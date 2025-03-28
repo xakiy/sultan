@@ -4,7 +4,7 @@ QT += printsupport serialport
 
 TEMPLATE = lib
 TARGET = print
-target.path = $${LIBDIR}
+target.path = /usr/bin
 INSTALLS += target
 
 CONFIG(static) {

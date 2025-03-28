@@ -121,6 +121,10 @@ const int SUMMARY_TRANSACTION = 29;
 const int SUMMARY_MONEY = 30;
 const int RESET = 31;
 const int CONFIG_INSERT_UPDATE = 32;
+const int STOCK = 33;
+const int ADD_PAYMENT = 34;
+const int DELETE_PAYMENT = 35;
+const int UPDATE_PAYMENT = 36;
 } // namespace MSG_COMMAND
 
 namespace MSG_BROADCAST {

@@ -1,6 +1,6 @@
 TEMPLATE = lib
 TARGET = global
-target.path = $${LIBDIR}
+target.path = /usr/bin
 INSTALLS += target
 
 QT += concurrent core

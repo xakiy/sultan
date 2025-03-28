@@ -26,6 +26,7 @@
 #include <QDebug>
 #include <QLocale>
 #include <QMessageBox>
+#include <QShortcut>
 
 using namespace LibGUI;
 using namespace LibG;
@@ -34,6 +35,7 @@ PayCashDialog::PayCashDialog(QWidget *parent) : QDialog(parent), ui(new Ui::PayC
     ui->setupUi(this);
     connect(ui->pushPay, SIGNAL(clicked(bool)), SLOT(payClicked()));
     connect(ui->pushSave, SIGNAL(clicked(bool)), SLOT(saveClicked()));
+    new QShortcut(QKeySequence(Qt::Key_F4), this, SLOT(saveClicked()));
 }
 
 PayCashDialog::~PayCashDialog() { delete ui; }
@@ -48,22 +50,25 @@ void PayCashDialog::fill(double total) {
     ui->lineEdit->selectAll();
 }
 
-void PayCashDialog::saveTransaction() {
+bool PayCashDialog::saveTransaction() {
     double payment = ui->lineEdit->value();
     if (Util::roundDouble(payment) < Util::roundDouble(mTotal)) {
         QMessageBox::critical(this, tr("Error Payment"), tr("Payment must bigger or equal to total"));
-        return;
+        return false;
     }
     ui->pushPay->setEnabled(false);
     ui->pushSave->setEnabled(false);
+    return true;
 }
 
 void PayCashDialog::payClicked() {
-    saveTransaction();
-    emit requestPay(PAYMENT::CASH, ui->lineEdit->value(), 0);
+    if(saveTransaction()) {
+        emit requestPay(PAYMENT::CASH, ui->lineEdit->value(), 0);
+    }
 }
 
 void PayCashDialog::saveClicked() {
-    saveTransaction();
-    emit requestPay(PAYMENT::CASH, ui->lineEdit->value(), 1);
+    if(saveTransaction()) {
+        emit requestPay(PAYMENT::CASH, ui->lineEdit->value(), 1);
+    }
 }

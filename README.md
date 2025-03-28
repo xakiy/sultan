@@ -2,7 +2,7 @@
 Minimarket POS (Point Of Sales) software writen in C++ with Qt Framework. The main target of Sultan POS is minimarket and able to run on Raspberry Pi.
 
 ## Feature
-* Networked (uses websocket)
+* Networked (uses tcp socket)
 * Multi prices
 * Item categories
 * Supliers
@@ -19,20 +19,17 @@ Minimarket POS (Point Of Sales) software writen in C++ with Qt Framework. The ma
 * Cashier and sold return
 * Stock Card
 * Box / Package item
-* Export / import database to file and Google drive
+* Export / import database
 * And many
 
 ## Compile
 * Please check [Wiki Compile](https://github.com/apinprastya/sultan/wiki/Compile)
 
-## Screenshot
-* Please check [Wiki Screenshot](https://github.com/apinprastya/sultan/wiki/Screenshot)
-
-## Contact
-Any question/support please contact me apin.klas@gmail.com
-
 ## Note
 Please consider to give a star when clone this repository
+
+## Third party library
+* Reading and writing Xlsx file using [QXlsx](https://github.com/QtExcel/QXlsx)
 
 ## License
 GPL. See [LICENSE](https://github.com/apinprastya/sultan/blob/master/LICENSE)

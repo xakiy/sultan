@@ -25,6 +25,7 @@
 #include "global_constant.h"
 #include "guiutil.h"
 #include "headerwidget.h"
+#include "logocached.h"
 #include "message.h"
 #include "preference.h"
 #include "tableitem.h"
@@ -49,6 +50,7 @@ TransactionWidget::TransactionWidget(LibG::MessageBus *bus, QWidget *parent)
       mTileProfit(new TileWidget(this)) {
     ui->setupUi(this);
     setMessageBus(bus);
+    ui->label->setPixmap(LogoCached::logo32());
     ui->labelTitle->setText(tr("Transactions"));
 
     auto hor = new QHBoxLayout;
@@ -126,11 +128,12 @@ void TransactionWidget::messageReceived(LibG::Message *msg) {
         mTableWidget->getModel()->refresh();
     } else if (msg->isTypeCommand(MSG_TYPE::TRANSACTION, MSG_COMMAND::EXPORT)) {
         if (msg->isSuccess()) {
-            const QString &fileName = QFileDialog::getSaveFileName(this, tr("Save as CSV"), QDir::homePath(), "*.csv");
+            const QString &fileName = QFileDialog::getSaveFileName(this, tr("Save as"), QDir::homePath(), "*.xlsx");
             if (!fileName.isEmpty()) {
                 QFile file(fileName);
                 if (file.open(QFile::WriteOnly)) {
-                    file.write(msg->data("data").toString().toUtf8());
+                    const QByteArray &arr = QByteArray::fromBase64(msg->data("data").toString().toUtf8());
+                    file.write(arr);
                     file.close();
                 } else {
                     QMessageBox::critical(this, tr("Error"), tr("Unable to save to file"));

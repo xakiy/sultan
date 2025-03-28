@@ -23,6 +23,7 @@
 #include "db.h"
 #include "global_constant.h"
 #include "global_setting_const.h"
+#include "logocached.h"
 #include "mainserver.h"
 #include "messagebus.h"
 #include "migration.h"
@@ -39,7 +40,6 @@
 #ifdef USE_LIBUSB
 #include "usb.h"
 #endif
-#include "http/httpserver.h"
 #include <QApplication>
 #include <QDate>
 #include <QDebug>
@@ -213,8 +213,6 @@ void Core::init() {
                     SLOT(messageReceived(LibG::Message *)));
             connect(mMainServer, SIGNAL(messageReady(LibG::Message *)), mSocketManager,
                     SLOT(sendToClient(LibG::Message *)));
-            mHttpServer = new HttpServer();
-            mHttpServer->runServer(Preference::getInt(SETTING::APP_PORT) + 1);
             mMainWindow->splashShowMessage("Connecting to server ...");
             qApp->processEvents();
 #ifndef SERVER_BUILD

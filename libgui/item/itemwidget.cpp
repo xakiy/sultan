@@ -20,7 +20,6 @@
 #include "itemwidget.h"
 #include "additemdialog.h"
 #include "addpricedialog.h"
-#include "db_constant.h"
 #include "escp.h"
 #include "flashmessagemanager.h"
 #include "global_constant.h"
@@ -28,9 +27,9 @@
 #include "guiutil.h"
 #include "headerwidget.h"
 #include "keyevent.h"
+#include "logocached.h"
 #include "message.h"
 #include "preference.h"
-#include "printer.h"
 #include "stockcarddialog.h"
 #include "tableitem.h"
 #include "tablemodel.h"
@@ -52,6 +51,7 @@ ItemWidget::ItemWidget(LibG::MessageBus *bus, QWidget *parent)
       mAddDialog(new AddItemDialog(bus, this)), mPriceDialog(new AddPriceDialog(bus, this)),
       mStockValue(new TileWidget(this)) {
     ui->setupUi(this);
+    ui->label->setPixmap(LogoCached::logo32());
     setMessageBus(bus);
     mStockValue->setTitleValue(tr("Stock Value"), tr("loading..."));
     mMainTable->initCrudButton();
@@ -90,9 +90,15 @@ ItemWidget::ItemWidget(LibG::MessageBus *bus, QWidget *parent)
     connect(button, SIGNAL(clicked(bool)), SLOT(importClicked()));
     mMainTable->addActionButton(button);
     model->refresh();
+
+    auto labelPrintHelp = new QLabel(this);
+    labelPrintHelp->setText(tr("Press button \"p\" to print price tag"));
+    labelPrintHelp->setWordWrap(true);
+    labelPrintHelp->setAlignment(Qt::AlignTop | Qt::AlignLeft);
+
     auto hor = new QHBoxLayout();
     hor->addWidget(mStockValue);
-    hor->addStretch();
+    hor->addWidget(labelPrintHelp);
     ui->verticalLayoutTop->addLayout(hor);
     ui->verticalLayoutTop->addWidget(mMainTable);
 
@@ -128,13 +134,14 @@ void ItemWidget::messageReceived(LibG::Message *msg) {
         FlashMessageManager::showMessage(tr("Item deleted successfully"));
         mMainTable->getModel()->refresh();
     } else if (msg->isTypeCommand(MSG_TYPE::ITEM, MSG_COMMAND::EXPORT)) {
-        QString fileName = QFileDialog::getSaveFileName(this, tr("Save as CSV"), QDir::homePath(), "*.csv");
+        QString fileName = QFileDialog::getSaveFileName(this, tr("Save as"), QDir::homePath(), "*.xlsx");
         if (!fileName.isEmpty()) {
-            if (!fileName.endsWith(".csv"))
-                fileName += ".csv";
+            if (!fileName.endsWith(".xlsx"))
+                fileName += ".xlsx";
             QFile file(fileName);
             if (file.open(QFile::WriteOnly)) {
-                file.write(msg->data("data").toString().toUtf8());
+                const QByteArray &arr = QByteArray::fromBase64(msg->data("data").toString().toUtf8());
+                file.write(arr);
                 file.close();
             } else {
                 QMessageBox::critical(this, tr("Error"), tr("Unable to save to file"));
@@ -194,14 +201,14 @@ void ItemWidget::importClicked() {
         this, tr("Confirmation"),
         tr("Your current item, category and supplier will be wipe out. Sure to continue import?"));
     if (res == QMessageBox::Yes) {
-        const QString &fileName = QFileDialog::getOpenFileName(this, tr("Import items"), QDir::homePath(), "*.csv");
+        const QString &fileName = QFileDialog::getOpenFileName(this, tr("Import items"), QDir::homePath(), "*.xlsx");
         if (fileName.isEmpty())
             return;
         QFile file(fileName);
         if (!file.open(QFile::ReadOnly))
             return;
         Message msg(MSG_TYPE::ITEM, MSG_COMMAND::IMPORT);
-        msg.addData("data", QString::fromUtf8(file.readAll()));
+        msg.addData("data", QString::fromUtf8(file.readAll().toBase64()));
         sendMessage(&msg);
     }
 }
@@ -248,13 +255,14 @@ void ItemWidget::printPrice(TableItem *item) {
     auto escp = new LibPrint::Escp(LibPrint::Escp::SIMPLE, cpi10, cpi12);
     escp->setCpi10Only(Preference::getBool(SETTING::PRINTER_CASHIER_ONLY_CPI10));
     escp->cpi10()
-        ->line(QChar('='))
-        ->newLine()
+        ->line(QChar('-'))
+        ->doubleHeight(Preference::getBool(SETTING::PRINTER_CASHIER_PRICE_DOUBLE_FONT, true))
         ->centerText(item->data("name").toString())
         ->newLine()
         ->centerText(Preference::formatMoney(item->data("sell_price").toDouble()))
         ->newLine()
-        ->line(QChar('='))
+        ->doubleHeight(false)
+        ->line(QChar('-'))
         ->newLine(Preference::getInt(SETTING::PRINTER_CASHIER_PRICE_LINEFEED, 2));
     GuiUtil::print(escp->data());
     delete escp;

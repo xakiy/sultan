@@ -35,6 +35,7 @@ class Splash : public QDialog {
     Splash(QWidget *parent = nullptr);
     ~Splash();
     void setMessage(const QString &msg);
+    void refreshLogo();
 
   private:
     Ui::Splash *ui;

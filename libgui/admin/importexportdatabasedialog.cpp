@@ -21,7 +21,6 @@
 #include "browserdialog.h"
 #include "global_constant.h"
 #include "global_setting_const.h"
-#include "googledrive.h"
 #include "guiutil.h"
 #include "listdialog.h"
 #include "message.h"
@@ -29,38 +28,22 @@
 #include "ui_importexportdatabasedialog.h"
 #include <QApplication>
 #include <QDebug>
-#include <QDesktopServices>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QProcess>
-#include <QProgressDialog>
 
 using namespace LibGUI;
 using namespace LibG;
 
 ImportExportDatabaseDialog::ImportExportDatabaseDialog(LibG::MessageBus *bus, QWidget *parent)
-    : QDialog(parent), ui(new Ui::ImportExportDatabaseDialog), mBrowser(new BrowserDialog(this)),
-      mO2Google(new O2Google(this)) {
+    : QDialog(parent), ui(new Ui::ImportExportDatabaseDialog) {
     ui->setupUi(this);
     setMessageBus(bus);
-    mBrowser->installEventFilter(this);
-    mO2Google->setClientId(GOOGLE::CLIENT_ID);
-    mO2Google->setClientSecret(GOOGLE::CLIENT_SECRET);
-    mO2Google->setScope("https://www.googleapis.com/auth/drive");
-    mGDrive = new GoogleDrive(mO2Google, this);
     adjustSize();
     connect(ui->pushExportToFile, SIGNAL(clicked(bool)), SLOT(exportFile()));
-    connect(ui->pushExportToGDrive, SIGNAL(clicked(bool)), SLOT(exportGDrive()));
     connect(ui->pushImportFile, SIGNAL(clicked(bool)), SLOT(importFile()));
-    connect(ui->pushImportGDrive, SIGNAL(clicked(bool)), SLOT(importGDrive()));
-    connect(mO2Google, SIGNAL(linkingFailed()), SLOT(onLinkingFailed()));
-    connect(mO2Google, SIGNAL(linkingSucceeded()), SLOT(onLinkingSuccess()));
-    connect(mO2Google, SIGNAL(openBrowser(QUrl)), SLOT(onOpenBrowser(const QUrl)));
-    connect(mO2Google, SIGNAL(closeBrowser()), SLOT(onCloseBrowser()));
-    connect(mGDrive, SIGNAL(fileUploaded()), SLOT(uploadGDriveDone()));
-    connect(mGDrive, SIGNAL(fileQueryAnswered(QJsonArray)), SLOT(onFileListed(QJsonArray)));
-    connect(mGDrive, SIGNAL(fileDownloaded(QByteArray)), SLOT(onFileDownloaded(QByteArray)));
-    connect(&mNetworkManager, SIGNAL(finished(QNetworkReply *)), SLOT(requestFinished(QNetworkReply *)));
+    ui->pushExportToGDrive->hide();
+    ui->pushImportGDrive->hide();
 }
 
 ImportExportDatabaseDialog::~ImportExportDatabaseDialog() { delete ui; }
@@ -68,17 +51,21 @@ ImportExportDatabaseDialog::~ImportExportDatabaseDialog() { delete ui; }
 void ImportExportDatabaseDialog::messageReceived(Message *msg) {
     if (msg->isTypeCommand(MSG_TYPE::DATABASE, MSG_COMMAND::EXPORT)) {
         if (msg->isSuccess()) {
-            QString url;
-            if (Preference::getInt(SETTING::APP_TYPE) == APPLICATION_TYPE::SERVER) {
-                url = "http://localhost:" + QString::number(Preference::getInt(SETTING::APP_PORT) + 1);
-            } else {
-                url = "http://" + Preference::getString(SETTING::SERVER_ADDRESS) + ":" +
-                      QString::number(Preference::getInt(SETTING::SERVER_PORT) + 1);
+            const QString b64 = msg->data("data").toString();
+            const QByteArray &ba = QByteArray::fromBase64(b64.toUtf8());
+            auto filename =
+                QFileDialog::getSaveFileName(this, tr("Save exported database"), QDir::homePath(), "*.sltn");
+            if (!filename.isEmpty()) {
+                if (!filename.endsWith(".sltn"))
+                    filename += ".sltn";
+                QFile file(filename);
+                if (file.open(QFile::WriteOnly)) {
+                    file.write(ba);
+                    file.close();
+                }
             }
-            url += "/sultan.export";
-            QUrl qurl(url);
-            QNetworkRequest req(qurl);
-            mNetworkManager.get(req);
+            GuiUtil::enableWidget(true, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive,
+                                                         ui->pushImportFile, ui->pushImportGDrive});
         }
     } else if (msg->isTypeCommand(MSG_TYPE::DATABASE, MSG_COMMAND::IMPORT)) {
         if (msg->isSuccess()) {
@@ -103,7 +90,7 @@ void ImportExportDatabaseDialog::messageReceived(Message *msg) {
 bool ImportExportDatabaseDialog::eventFilter(QObject *obj, QEvent *event) {
     auto webview = qobject_cast<BrowserDialog *>(obj);
     if (webview != nullptr) {
-        if (event->type() == QEvent::Close && !mGDriveInProcess)
+        if (event->type() == QEvent::Close)
             GuiUtil::enableWidget(true, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive,
                                                          ui->pushImportFile, ui->pushImportGDrive});
     }
@@ -111,33 +98,15 @@ bool ImportExportDatabaseDialog::eventFilter(QObject *obj, QEvent *event) {
 }
 
 void ImportExportDatabaseDialog::uploadFile(const QByteArray &data) {
-    QString url;
-    if (Preference::getInt(SETTING::APP_TYPE) == APPLICATION_TYPE::SERVER) {
-        url = "http://localhost:" + QString::number(Preference::getInt(SETTING::APP_PORT) + 1);
-    } else {
-        url = "http://" + Preference::getString(SETTING::SERVER_ADDRESS) + ":" +
-              QString::number(Preference::getInt(SETTING::SERVER_PORT) + 1);
-    }
-    QUrl qurl(url);
-    QNetworkRequest req(qurl);
-    auto rep = mNetworkManager.post(req, data);
-    rep->setObjectName("UPLOAD");
+    Message msg(MSG_TYPE::DATABASE, MSG_COMMAND::IMPORT);
+    const QByteArray &ba = data.toBase64();
+    msg.addData("data", QString(ba));
+    sendMessage(&msg);
 }
 
 void ImportExportDatabaseDialog::exportFile() {
-    mIsGDrive = false;
     Message msg(MSG_TYPE::DATABASE, MSG_COMMAND::EXPORT);
-    msg.addData("version", qApp->applicationVersion());
     sendMessage(&msg);
-    GuiUtil::enableWidget(false, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive, ui->pushImportFile,
-                                                  ui->pushImportGDrive});
-}
-
-void ImportExportDatabaseDialog::exportGDrive() {
-    mGDriveInProcess = false;
-    mIsGDrive = true;
-    mIsExport = true;
-    mO2Google->link();
     GuiUtil::enableWidget(false, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive, ui->pushImportFile,
                                                   ui->pushImportGDrive});
 }
@@ -151,101 +120,6 @@ void ImportExportDatabaseDialog::importFile() {
         QFile f(filename);
         if (f.open(QFile::ReadOnly)) {
             uploadFile(f.readAll());
-        }
-    }
-}
-
-void ImportExportDatabaseDialog::importGDrive() {
-    mGDriveInProcess = false;
-    mIsGDrive = true;
-    mIsExport = false;
-    mO2Google->link();
-    GuiUtil::enableWidget(false, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive, ui->pushImportFile,
-                                                  ui->pushImportGDrive});
-}
-
-void ImportExportDatabaseDialog::onLinkingFailed() {
-    QMessageBox::warning(this, tr("Google Auth"), tr("Google Auth Failed"));
-    mGDriveInProcess = false;
-}
-
-void ImportExportDatabaseDialog::onLinkingSuccess() {
-    if (!mO2Google->linked())
-        return;
-    mGDriveInProcess = true;
-    if (mIsExport) {
-        Message msg(MSG_TYPE::DATABASE, MSG_COMMAND::EXPORT);
-        msg.addData("version", qApp->applicationVersion());
-        sendMessage(&msg);
-    } else {
-        mGDrive->getFiles();
-    }
-}
-
-void ImportExportDatabaseDialog::onOpenBrowser(const QUrl &url) {
-#ifdef USE_EMBED_BROWSER
-    mBrowser->setUrl(url);
-    mBrowser->show();
-#else
-    QDesktopServices::openUrl(url);
-#endif
-}
-
-void ImportExportDatabaseDialog::onCloseBrowser() {
-    mGDriveInProcess = false;
-#ifdef USE_EMBED_BROWSER
-    mBrowser->hide();
-#else
-#endif
-}
-
-void ImportExportDatabaseDialog::uploadGDriveDone() {
-    GuiUtil::enableWidget(
-        true, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive, ui->pushImportFile, ui->pushImportGDrive});
-}
-
-void ImportExportDatabaseDialog::onFileListed(const QJsonArray &arr) {
-    ListDialog dialog(this);
-    dialog.fill(arr);
-    dialog.exec();
-    const QString fileId = dialog.getSelectedId();
-    if (!fileId.isEmpty()) {
-        mGDrive->downloadFile(fileId);
-    } else {
-        GuiUtil::enableWidget(true, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive, ui->pushImportFile,
-                                                     ui->pushImportGDrive});
-    }
-}
-
-void ImportExportDatabaseDialog::onFileDownloaded(const QByteArray &data) { uploadFile(data); }
-
-void ImportExportDatabaseDialog::requestFinished(QNetworkReply *reply) {
-    const QByteArray &data = reply->readAll();
-    if (!mIsGDrive) {
-        if (reply->objectName() == "UPLOAD") {
-            Message msg(MSG_TYPE::DATABASE, MSG_COMMAND::IMPORT);
-            msg.addData("version", qApp->applicationVersion());
-            msg.addData("name", QString::fromUtf8(data));
-            sendMessage(&msg);
-        } else {
-            auto filename =
-                QFileDialog::getSaveFileName(this, tr("Save exported database"), QDir::homePath(), "*.sltn");
-            if (!filename.isEmpty()) {
-                if (!filename.endsWith(".sltn"))
-                    filename += ".sltn";
-                QFile file(filename);
-                if (file.open(QFile::WriteOnly)) {
-                    file.write(data);
-                    file.close();
-                }
-            }
-            GuiUtil::enableWidget(true, QList<QWidget *>{ui->pushExportToFile, ui->pushExportToGDrive,
-                                                         ui->pushImportFile, ui->pushImportGDrive});
-        }
-    } else {
-        if (reply->objectName() == "UPLOAD") {
-        } else {
-            mGDrive->uploadFile(data);
         }
     }
 }

@@ -4,7 +4,7 @@ QT += sql concurrent
 
 TEMPLATE = lib
 TARGET = db
-target.path = $${LIBDIR}
+target.path = /usr/bin
 INSTALLS += target
 
 CONFIG(static) {

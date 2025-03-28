@@ -70,6 +70,7 @@ class CashierWidget : public QWidget, public LibG::MessageHandler, public TabClo
     void updateCustomerLabel();
     double getTax();
     void updateItem(CashierItem *item);
+    QString totalLabel(bool useTotalItem, double total);
 
   signals:
     void transactionDone();
@@ -106,6 +107,8 @@ class CashierWidget : public QWidget, public LibG::MessageHandler, public TabClo
     void addNewItemNoBarcode();
     void tableClicked(const QModelIndex &index);
     void editRequest(const QModelIndex &index, const QVariant &value);
+    void refreshStock();
+    void checkFixStock();
 };
 
 } // namespace LibGUI
